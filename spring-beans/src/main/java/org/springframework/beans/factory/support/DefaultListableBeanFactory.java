@@ -775,14 +775,19 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 	public Object resolveDependency(DependencyDescriptor descriptor, String beanName,
 			Set<String> autowiredBeanNames, TypeConverter typeConverter) throws BeansException {
 
+		// 初始化参数名称发现器，该方法并不会在这个时候尝试检索参数名称
+		// getParameterNameDiscoverer 返回 parameterNameDiscoverer 实例，parameterNameDiscoverer 方法参数名称的解析器
 		descriptor.initParameterNameDiscovery(getParameterNameDiscoverer());
+		// 依赖类型为ObjectFactory、ObjectProvider
 		if (descriptor.getDependencyType().equals(ObjectFactory.class)) {
 			return new DependencyObjectFactory(descriptor, beanName);
 		}
+		// javaxInjectProviderClass 类注入的特殊处理
 		else if (descriptor.getDependencyType().equals(javaxInjectProviderClass)) {
 			return new DependencyProviderFactory().createDependencyProvider(descriptor, beanName);
 		}
 		else {
+			// 通用处理逻辑
 			return doResolveDependency(descriptor, descriptor.getDependencyType(), beanName, autowiredBeanNames, typeConverter);
 		}
 	}

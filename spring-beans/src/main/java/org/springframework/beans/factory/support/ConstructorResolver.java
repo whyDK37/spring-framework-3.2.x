@@ -101,24 +101,30 @@ class ConstructorResolver {
 	 */
 	public BeanWrapper autowireConstructor(
 			final String beanName, final RootBeanDefinition mbd, Constructor<?>[] chosenCtors, final Object[] explicitArgs) {
-
+		// 封装 BeanWrapperImpl 对象，并完成初始化
 		BeanWrapperImpl bw = new BeanWrapperImpl();
 		this.beanFactory.initBeanWrapper(bw);
 
-		Constructor<?> constructorToUse = null;
-		ArgumentsHolder argsHolderToUse = null;
-		Object[] argsToUse = null;
+		// 获得 constructorToUse、argsHolderToUse、argsToUse
+		Constructor<?> constructorToUse = null; // 构造函数
+		ArgumentsHolder argsHolderToUse = null; // 构造参数
+		Object[] argsToUse = null;// 构造参数
 
+		// 确定构造参数
+		// 如果 getBean() 已经传递，则直接使用
 		if (explicitArgs != null) {
 			argsToUse = explicitArgs;
 		}
 		else {
+			// 尝试从缓存中获取
 			Object[] argsToResolve = null;
 			// 尝试从缓存中获取
 			synchronized (mbd.constructorArgumentLock) {
+				// 缓存中的构造函数或者工厂方法
 				constructorToUse = (Constructor<?>) mbd.resolvedConstructorOrFactoryMethod;
 				if (constructorToUse != null && mbd.constructorArgumentsResolved) {
 					// Found a cached constructor...
+					// 缓存中的构造参数
 					argsToUse = mbd.resolvedConstructorArguments;
 					if (argsToUse == null) {
 						// 配置的构造函数参数
@@ -126,15 +132,18 @@ class ConstructorResolver {
 					}
 				}
 			}
-			// 如果缓存中存在。解析参数
+			// 缓存中存在,则解析存储在 BeanDefinition 中的参数
+			// 如给定方法的构造函数 A(int ,int )，则通过此方法后就会把配置文件中的("1","1")转换为 (1,1)
+			// 缓存中的值可能是原始值也有可能是最终值
 			if (argsToResolve != null) {
 				argsToUse = resolvePreparedArguments(beanName, mbd, bw, constructorToUse, argsToResolve);
 			}
 		}
 
-		// 没有缓存
+		// // 没有缓存，则尝试从配置文件中获取参数
 		if (constructorToUse == null) {
 			// Need to resolve the constructor.
+			// 如果 chosenCtors 未传入，则获取构造方法们
 			boolean autowiring = (chosenCtors != null ||
 					mbd.getResolvedAutowireMode() == RootBeanDefinition.AUTOWIRE_CONSTRUCTOR);
 			ConstructorArgumentValues resolvedValues = null;
@@ -381,9 +390,13 @@ class ConstructorResolver {
 	public BeanWrapper instantiateUsingFactoryMethod(
 			final String beanName, final RootBeanDefinition mbd, final Object[] explicitArgs) {
 
+		// 构造 BeanWrapperImpl 对象
 		BeanWrapperImpl bw = new BeanWrapperImpl();
+		// 初始化 BeanWrapperImpl
+		// 向BeanWrapper对象中添加 ConversionService 对象和属性编辑器 PropertyEditor 对象
 		this.beanFactory.initBeanWrapper(bw);
 
+		// <1> 获得 factoryBean、factoryClass、isStatic、factoryBeanName 属性
 		Object factoryBean;
 		Class<?> factoryClass;
 		boolean isStatic;
@@ -394,6 +407,7 @@ class ConstructorResolver {
 				throw new BeanDefinitionStoreException(mbd.getResourceDescription(), beanName,
 						"factory-bean reference points back to the same bean definition");
 			}
+			// 获取工厂实例
 			factoryBean = this.beanFactory.getBean(factoryBeanName);
 			if (factoryBean == null) {
 				throw new BeanCreationException(mbd.getResourceDescription(), beanName,
@@ -421,17 +435,26 @@ class ConstructorResolver {
 			argsToUse = explicitArgs;
 		}
 		else {
+			// 没有指定，则尝试从配置文件中解析
 			Object[] argsToResolve = null;
+			// 首先尝试从缓存中获取
 			synchronized (mbd.constructorArgumentLock) {
+				// 获取缓存中的构造函数或者工厂方法
 				factoryMethodToUse = (Method) mbd.resolvedConstructorOrFactoryMethod;
 				if (factoryMethodToUse != null && mbd.constructorArgumentsResolved) {
 					// Found a cached factory method...
+					// 获取缓存中的构造参数
 					argsToUse = mbd.resolvedConstructorArguments;
 					if (argsToUse == null) {
+//						获取缓存中的构造函数参数的包可见字段
 						argsToResolve = mbd.preparedConstructorArguments;
 					}
 				}
 			}
+
+			// 缓存中存在,则解析存储在 BeanDefinition 中的参数
+			// 如给定方法的构造函数 A(int ,int )，则通过此方法后就会把配置文件中的("1","1")转换为 (1,1)
+			// 缓存中的值可能是原始值也有可能是最终值
 			if (argsToResolve != null) {
 				argsToUse = resolvePreparedArguments(beanName, mbd, bw, factoryMethodToUse, argsToResolve);
 			}
@@ -440,11 +463,15 @@ class ConstructorResolver {
 		if (factoryMethodToUse == null || argsToUse == null) {
 			// Need to determine the factory method...
 			// Try all methods with this name to see if they match the given arguments.
+			// 获取工厂方法的类全名称
 			factoryClass = ClassUtils.getUserClass(factoryClass);
 
+			// 获取所有待定方法
 			Method[] rawCandidates = getCandidateMethods(factoryClass, mbd);
 			List<Method> candidateSet = new ArrayList<Method>();
+			// 索所有方法，这里是对方法进行过滤
 			for (Method candidate : rawCandidates) {
+				// 如果有static 且为工厂方法，则添加到 candidateSet 中
 				if (Modifier.isStatic(candidate.getModifiers()) == isStatic && mbd.isFactoryMethod(candidate)) {
 					candidateSet.add(candidate);
 				}

@@ -89,7 +89,7 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 		}
 		else {
 			// Must generate CGLIB subclass.
-			//如果有 override method ，必须使用cglib进行动态代理。
+			// 如果有 override method ，必须使用cglib进行动态代理。
 			return instantiateWithMethodInjection(beanDefinition, beanName, owner);
 		}
 	}
